@@ -83,6 +83,7 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
 @synthesize shouldAddPanGestureRecognizerToTopViewSnapshot;
 @synthesize resetStrategy = _resetStrategy;
 @synthesize grabbableBorderAmount;
+@synthesize animationDuration;
 
 // category properties
 @synthesize topViewSnapshot;
@@ -185,7 +186,8 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
   self.topViewSnapshot = [[UIView alloc] initWithFrame:self.topView.bounds];
   [self.topViewSnapshot setAutoresizingMask:self.autoResizeToFillScreen];
   [self.topViewSnapshot addGestureRecognizer:self.resetTapGesture];
-  self.grabbableBorderAmount = self.view.frame.size.width;
+  self.grabbableBorderAmount = -1;
+  self.animationDuration = 0.25f;
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -251,7 +253,7 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
   CGPoint currentTouchPoint     = [recognizer locationInView:self.view];
   CGFloat currentTouchPositionX = currentTouchPoint.x; 
   if (recognizer.state == UIGestureRecognizerStateBegan) {
-    if (currentTouchPositionX < self.grabbableBorderAmount || currentTouchPositionX > (self.view.frame.size.width-self.grabbableBorderAmount)) {
+    if (self.grabbableBorderAmount < 0 || currentTouchPositionX < self.grabbableBorderAmount || currentTouchPositionX > (self.view.frame.size.width-self.grabbableBorderAmount)) {
       self.initialTouchPositionX = currentTouchPositionX;
       self.initialHoizontalCenter = self.topView.center.x;
     }
@@ -296,27 +298,38 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
 
 - (void)anchorTopViewTo:(ECSide)side
 {
-  [self anchorTopViewTo:side animations:nil onComplete:nil];
+  [self anchorTopViewTo:side animated:YES];
+}
+
+- (void)anchorTopViewTo:(ECSide)side animated:(BOOL)animated
+{
+  [self anchorTopViewTo:side animations:nil onComplete:nil animated:animated];
 }
 
 - (void)anchorTopViewTo:(ECSide)side animations:(void (^)())animations onComplete:(void (^)())complete
 {
+  [self anchorTopViewTo:side animations:nil onComplete:nil animated:YES];
+}
+
+- (void)anchorTopViewTo:(ECSide)side animations:(void (^)())animations onComplete:(void (^)())complete animated:(BOOL)animated
+{
   CGFloat newCenter = self.topView.center.x;
-  
+
   if (side == ECLeft) {
     newCenter = self.anchorLeftTopViewCenter;
   } else if (side == ECRight) {
     newCenter = self.anchorRightTopViewCenter;
   }
-  
+    
   [self topViewHorizontalCenterWillChange:newCenter];
-  
-  [UIView animateWithDuration:0.25f animations:^{
+    
+  void (^animationBlock)() = ^() {
     if (animations) {
       animations();
     }
     [self updateTopViewHorizontalCenter:newCenter];
-  } completion:^(BOOL finished){
+  };
+  void (^completeBlock)(BOOL finished) = ^(BOOL finished) {
     if (_resetStrategy & ECPanning) {
       self.panGesture.enabled = YES;
     } else {
@@ -328,18 +341,40 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
     _topViewIsOffScreen = NO;
     [self addTopViewSnapshot];
     dispatch_async(dispatch_get_main_queue(), ^{
-      NSString *key = (side == ECLeft) ? ECSlidingViewTopDidAnchorLeft : ECSlidingViewTopDidAnchorRight;
+      NSString *key = (side == ECLeft) ? ECSlidingViewTopDidAnchorLeft :ECSlidingViewTopDidAnchorRight;
       [[NSNotificationCenter defaultCenter] postNotificationName:key object:self userInfo:nil];
     });
-  }];
+  };
+
+  
+  if (!animated)
+  {
+    animationBlock();
+    completeBlock(YES);
+  }
+  else
+  {
+    [UIView animateWithDuration:self.animationDuration animations:animationBlock completion:completeBlock];
+  }
+  
 }
 
 - (void)anchorTopViewOffScreenTo:(ECSide)side
 {
-  [self anchorTopViewOffScreenTo:side animations:nil onComplete:nil];
+  [self anchorTopViewOffScreenTo:side animated:YES];
+}
+
+- (void)anchorTopViewOffScreenTo:(ECSide)side animated:(BOOL)animated
+{
+  [self anchorTopViewOffScreenTo:side animations:nil onComplete:nil animated:animated];
 }
 
 - (void)anchorTopViewOffScreenTo:(ECSide)side animations:(void(^)())animations onComplete:(void(^)())complete
+{
+  [self anchorTopViewOffScreenTo:side animations:nil onComplete:nil animated:YES];
+}
+
+- (void)anchorTopViewOffScreenTo:(ECSide)side animations:(void(^)())animations onComplete:(void(^)())complete animated:(BOOL)animated
 {
   CGFloat newCenter = self.topView.center.x;
   
@@ -351,7 +386,7 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
   
   [self topViewHorizontalCenterWillChange:newCenter];
   
-  [UIView animateWithDuration:0.25f animations:^{
+  [UIView animateWithDuration:self.animationDuration animations:^{
     if (animations) {
       animations();
     }
@@ -369,29 +404,51 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
   }];
 }
 
+
 - (void)resetTopView
 {
+  [self resetTopView:YES];
+}
+
+- (void)resetTopView:(BOOL)animated
+{
   dispatch_async(dispatch_get_main_queue(), ^{
-    [[NSNotificationCenter defaultCenter] postNotificationName:ECSlidingViewTopWillReset object:self userInfo:nil];
+    [[NSNotificationCenter defaultCenter] postNotificationName:ECSlidingViewTopWillReset object:self userInfo:[NSDictionary dictionaryWithObjectsAndKeys:[NSNumber numberWithBool:animated], @"animated", nil]];
   });
-  [self resetTopViewWithAnimations:nil onComplete:nil];
+  [self resetTopViewWithAnimations:nil onComplete:nil animated:animated];
 }
 
 - (void)resetTopViewWithAnimations:(void(^)())animations onComplete:(void(^)())complete
 {
+  [self resetTopViewWithAnimations:nil onComplete:nil animated:YES];
+}
+
+- (void)resetTopViewWithAnimations:(void(^)())animations onComplete:(void(^)())complete animated:(BOOL)animated
+{
   [self topViewHorizontalCenterWillChange:self.resettedCenter];
-  
-  [UIView animateWithDuration:0.25f animations:^{
+    
+  void (^animationBlock)() = ^() {
     if (animations) {
       animations();
     }
     [self updateTopViewHorizontalCenter:self.resettedCenter];
-  } completion:^(BOOL finished) {
+  };
+  void (^completeBlock)(BOOL finished) = ^(BOOL finished) {
     if (complete) {
       complete();
     }
     [self topViewHorizontalCenterDidChange:self.resettedCenter];
-  }];
+  };
+    
+  if (!animated)
+  {
+    animationBlock();
+    completeBlock(YES);
+  }
+  else
+  {
+    [UIView animateWithDuration:self.animationDuration animations:animationBlock completion:completeBlock];
+  }
 }
 
 - (NSUInteger)autoResizeToFillScreen
@@ -480,9 +537,9 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
 
 - (CGFloat)anchorRightTopViewCenter
 {
-  if (self.anchorRightPeekAmount) {
+  if (self.underLeftWidthLayout == ECVariableRevealWidth) {
     return self.view.bounds.size.width + self.resettedCenter - self.anchorRightPeekAmount;
-  } else if (self.anchorRightRevealAmount) {
+  } else if (self.underLeftWidthLayout == ECFixedRevealWidth) {
     return self.resettedCenter + self.anchorRightRevealAmount;
   } else {
     return NSNotFound;
@@ -491,9 +548,9 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
 
 - (CGFloat)anchorLeftTopViewCenter
 {
-  if (self.anchorLeftPeekAmount) {
+  if (self.underRightWidthLayout == ECVariableRevealWidth) {
     return -self.resettedCenter + self.anchorLeftPeekAmount;
-  } else if (self.anchorLeftRevealAmount) {
+  } else if (self.underRightWidthLayout == ECFixedRevealWidth) {
     return -self.resettedCenter + (self.view.bounds.size.width - self.anchorLeftRevealAmount);
   } else {
     return NSNotFound;

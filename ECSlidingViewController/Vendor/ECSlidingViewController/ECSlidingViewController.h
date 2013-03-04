@@ -163,6 +163,11 @@ typedef enum {
  */
 @property (nonatomic, assign) CGFloat grabbableBorderAmount;
 
+/** Returns the animations duration.
+ */
+@property (nonatomic, assign) CGFloat animationDuration;
+
+
 /** Returns a horizontal panning gesture for moving the top view.
  
  This is typically added to the top view or a top view's navigation bar.
@@ -176,6 +181,7 @@ typedef enum {
  @param side The side for the top view to slide towards.
  */
 - (void)anchorTopViewTo:(ECSide)side;
+- (void)anchorTopViewTo:(ECSide)side animated:(BOOL)animated;
 
 /** Slides the top view in the direction of the specified side.
  
@@ -186,12 +192,14 @@ typedef enum {
  @param onComplete Executed after the animation is completed. Can be nil.
  */
 - (void)anchorTopViewTo:(ECSide)side animations:(void(^)())animations onComplete:(void(^)())complete;
+- (void)anchorTopViewTo:(ECSide)side animations:(void(^)())animations onComplete:(void(^)())complete animated:(BOOL)animated;
 
 /** Slides the top view off of the screen in the direction of the specified side.
  
  @param side The side for the top view to slide off the screen towards.
  */
 - (void)anchorTopViewOffScreenTo:(ECSide)side;
+- (void)anchorTopViewOffScreenTo:(ECSide)side animated:(BOOL)animated;
 
 /** Slides the top view off of the screen in the direction of the specified side.
  
@@ -200,9 +208,11 @@ typedef enum {
  @param onComplete Executed after the animation is completed. Can be nil.
  */
 - (void)anchorTopViewOffScreenTo:(ECSide)side animations:(void(^)())animations onComplete:(void(^)())complete;
+- (void)anchorTopViewOffScreenTo:(ECSide)side animations:(void(^)())animations onComplete:(void(^)())complete animated:(BOOL)animated;
 
 /** Slides the top view back to the center. */
 - (void)resetTopView;
+- (void)resetTopView:(BOOL)animated;
 
 /** Slides the top view back to the center.
 
@@ -210,6 +220,7 @@ typedef enum {
  @param onComplete Executed after the animation is completed. Can be nil.
  */
 - (void)resetTopViewWithAnimations:(void(^)())animations onComplete:(void(^)())complete;
+- (void)resetTopViewWithAnimations:(void(^)())animations onComplete:(void(^)())complete animated:(BOOL)animated;
 
 /** Returns true if the underLeft view is showing (even partially) */
 - (BOOL)underLeftShowing;

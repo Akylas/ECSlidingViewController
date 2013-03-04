@@ -159,6 +159,10 @@ typedef enum {
  */
 @property (nonatomic, assign) ECResetStrategy resetStrategy;
 
+/** Returns the number of points from the side of the view a pan gesture can start to trigger a reveal.
+ */
+@property (nonatomic, assign) CGFloat grabbableBorderAmount;
+
 /** Returns a horizontal panning gesture for moving the top view.
  
  This is typically added to the top view or a top view's navigation bar.

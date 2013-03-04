@@ -82,6 +82,7 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
 @synthesize shouldAllowUserInteractionsWhenAnchored;
 @synthesize shouldAddPanGestureRecognizerToTopViewSnapshot;
 @synthesize resetStrategy = _resetStrategy;
+@synthesize grabbableBorderAmount;
 
 // category properties
 @synthesize topViewSnapshot;
@@ -184,6 +185,7 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
   self.topViewSnapshot = [[UIView alloc] initWithFrame:self.topView.bounds];
   [self.topViewSnapshot setAutoresizingMask:self.autoResizeToFillScreen];
   [self.topViewSnapshot addGestureRecognizer:self.resetTapGesture];
+  self.grabbableBorderAmount = self.view.frame.size.width;
 }
 
 - (void)viewWillAppear:(BOOL)animated
@@ -247,11 +249,16 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
 - (void)updateTopViewHorizontalCenterWithRecognizer:(UIPanGestureRecognizer *)recognizer
 {
   CGPoint currentTouchPoint     = [recognizer locationInView:self.view];
-  CGFloat currentTouchPositionX = currentTouchPoint.x;
-  
+  CGFloat currentTouchPositionX = currentTouchPoint.x; 
   if (recognizer.state == UIGestureRecognizerStateBegan) {
-    self.initialTouchPositionX = currentTouchPositionX;
-    self.initialHoizontalCenter = self.topView.center.x;
+    if (currentTouchPositionX < self.grabbableBorderAmount || currentTouchPositionX > (self.view.frame.size.width-self.grabbableBorderAmount)) {
+      self.initialTouchPositionX = currentTouchPositionX;
+      self.initialHoizontalCenter = self.topView.center.x;
+    }
+    else {
+      recognizer.enabled = NO;
+      recognizer.enabled = YES;
+    }
   } else if (recognizer.state == UIGestureRecognizerStateChanged) {
     CGFloat panAmount = self.initialTouchPositionX - currentTouchPositionX;
     CGFloat newCenterPosition = self.initialHoizontalCenter - panAmount;

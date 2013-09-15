@@ -21,7 +21,7 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
 
 @property (nonatomic, strong) UIView *topViewSnapshot;
 @property (nonatomic, assign) CGFloat initialTouchPositionX;
-@property (nonatomic, assign) CGFloat initialHoizontalCenter;
+@property (nonatomic, assign) CGFloat initialHorizontalCenter;
 @property (nonatomic, strong) UIPanGestureRecognizer *panGesture;
 @property (nonatomic, strong) UITapGestureRecognizer *resetTapGesture;
 @property (nonatomic, strong) UIPanGestureRecognizer *topViewSnapshotPanGesture;
@@ -89,7 +89,7 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
 // category properties
 @synthesize topViewSnapshot;
 @synthesize initialTouchPositionX;
-@synthesize initialHoizontalCenter;
+@synthesize initialHorizontalCenter;
 @synthesize panGesture = _panGesture;
 @synthesize resetTapGesture;
 @synthesize underLeftShowing   = _underLeftShowing;
@@ -117,6 +117,7 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
   _topViewController.view.layer.shadowPath = [UIBezierPath bezierPathWithRect:self.view.layer.bounds].CGPath;
   
   [self.view addSubview:_topViewController.view];
+  self.topViewSnapshot.frame = self.topView.bounds;
 }
 
 - (void)setUnderLeftViewController:(UIViewController *)theUnderLeftViewController
@@ -183,6 +184,7 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
   _panGesture          = [[UIPanGestureRecognizer alloc] initWithTarget:self action:@selector(updateTopViewHorizontalCenterWithRecognizer:)];
   self.resetTapGesture.enabled = NO;
   self.resetStrategy = ECTapping | ECPanning;
+  self.panningVelocityXThreshold = 100;
   
   self.topViewSnapshot = [[UIView alloc] initWithFrame:self.topView.bounds];
   [self.topViewSnapshot setAutoresizingMask:self.autoResizeToFillScreen];
@@ -265,7 +267,7 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
     }
   } else if (recognizer.state == UIGestureRecognizerStateChanged) {
     CGFloat panAmount = self.initialTouchPositionX - currentTouchPositionX;
-    CGFloat newCenterPosition = self.initialHoizontalCenter - panAmount;
+    CGFloat newCenterPosition = self.initialHorizontalCenter - panAmount;
     
     if ((newCenterPosition < self.resettedCenter && (self.anchorLeftTopViewCenter == NSNotFound || self.underRightViewController == nil)) ||
         (newCenterPosition > self.resettedCenter && (self.anchorRightTopViewCenter == NSNotFound || self.underLeftViewController == nil))) {
@@ -305,9 +307,9 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
         [delegate panEnded:-offset];
       }
       
-      if ([self underLeftShowing] && (currentVelocityX > 100 || self.topView.layer.position.x >= self.anchorRightTopViewCenter)) {
+      if ([self underLeftShowing] && (currentVelocityX > self.panningVelocityXThreshold || self.topView.layer.position.x >= self.anchorRightTopViewCenter)) {
         [self anchorTopViewTo:ECRight];
-      } else if ([self underRightShowing] && (currentVelocityX < 100 || self.topView.layer.position.x <= self.anchorLeftTopViewCenter)) {
+      } else if ([self underRightShowing] && (currentVelocityX < self.panningVelocityXThreshold || self.topView.layer.position.x <= self.anchorLeftTopViewCenter)) {
         [self anchorTopViewTo:ECLeft];
       } else {
         [self resetTopView];
@@ -514,6 +516,7 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
   CGPoint center = self.topView.center;
   center.x = newHorizontalCenter;
   self.topView.layer.position = center;
+  if (self.topViewCenterMoved) self.topViewCenterMoved(newHorizontalCenter);
 }
 
 - (void)topViewHorizontalCenterWillChange:(CGFloat)newHorizontalCenter
@@ -549,7 +552,8 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
 - (void)addTopViewSnapshot
 {
   if (!self.topViewSnapshot.superview && !self.shouldAllowUserInteractionsWhenAnchored) {
-    topViewSnapshot.layer.contents = (id)[UIImage imageWithUIView:self.topView].CGImage;
+    //topViewSnapshot.layer.contents = (id)[UIImage imageWithUIView:self.topView].CGImage;
+    [self.topView addSubview:self.topViewSnapshot];
     
     if (self.shouldAddPanGestureRecognizerToTopViewSnapshot && (_resetStrategy & ECPanning)) {
       if (!_topViewSnapshotPanGesture) {

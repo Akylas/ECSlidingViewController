@@ -93,6 +93,7 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
 @synthesize topViewSnapshot;
 @synthesize initialTouchPositionX;
 @synthesize initialHorizontalCenter;
+@synthesize disableOnScrollView;
 @synthesize panGesture = _panGesture;
 @synthesize resetTapGesture;
 @synthesize underLeftShowing   = _underLeftShowing;
@@ -288,14 +289,30 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
   }
 }
 
+-(BOOL)HasScrollViewChild:(UIView*)view atPosition:(CGPoint)point
+{
+    if (CGRectContainsPoint(view.frame, point)) {
+        if ([view isKindOfClass:[UIScrollView class]]) {
+            return true;
+        }
+       for (UIView *v in view.subviews) {
+           CGPoint pointInViewCoords = [v convertPoint:point fromView:view];
+           if ([self HasScrollViewChild:v atPosition:pointInViewCoords])
+               return true;
+        }
+    }
+    return false;
+}
+
 - (void)updateTopViewHorizontalCenterWithRecognizer:(UIPanGestureRecognizer *)recognizer
 {
   CGPoint currentTouchPoint     = [recognizer locationInView:self.view];
-  CGFloat currentTouchPositionX = currentTouchPoint.x; 
+  CGPoint controllerPoint     = [recognizer locationInView:recognizer.view];
+  CGFloat currentTouchPositionX = currentTouchPoint.x;
   if (recognizer.state == UIGestureRecognizerStateBegan) {
-    if (self.grabbableBorderAmount < 0 || currentTouchPositionX < self.grabbableBorderAmount || currentTouchPositionX > (self.view.frame.size.width-self.grabbableBorderAmount)) {
+      if (self.grabbableBorderAmount < 0 || currentTouchPositionX < self.grabbableBorderAmount || currentTouchPositionX > (self.view.frame.size.width-self.grabbableBorderAmount) || (disableOnScrollView && [self HasScrollViewChild:recognizer.view atPosition:controllerPoint])) {
       self.initialTouchPositionX = currentTouchPositionX;
-      self.initialHoizontalCenter = self.topView.center.x;
+      self.initialHorizontalCenter = self.topView.center.x;
     }
     else {
       recognizer.enabled = NO;

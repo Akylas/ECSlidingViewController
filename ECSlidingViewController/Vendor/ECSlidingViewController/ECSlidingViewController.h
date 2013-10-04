@@ -191,6 +191,8 @@ typedef enum {
  */
 @property (nonatomic, assign) CGFloat animationDuration;
 
+@property (nonatomic, assign) BOOL disableOnScrollView;
+
 
 /** Returns the X-axis velocity threshold used for determining whether or not to process a pan to the left or right
 

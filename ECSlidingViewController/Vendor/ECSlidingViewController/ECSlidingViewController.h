@@ -76,7 +76,7 @@ typedef enum {
 /** ECSlidingViewController is a view controller container that presents its child view controllers in two layers. The top layer can be panned to reveal the layers below it. */
 @interface ECSlidingViewController : UIViewController{
   CGPoint startTouchPosition;
-  id <ECSlidingViewDelegate> delegate;
+  __unsafe_unretained id <ECSlidingViewDelegate> delegate;
   BOOL topViewHasFocus;
   BOOL panning;
 }

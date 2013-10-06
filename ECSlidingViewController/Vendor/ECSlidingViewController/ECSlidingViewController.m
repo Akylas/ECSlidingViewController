@@ -184,6 +184,7 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
     [self.underLeftViewController didMoveToParentViewController:self];
     
     [self updateUnderLeftLayout];
+    [self.view insertSubview:self.underLeftView belowSubview:self.topView];
   }
 }
 
@@ -200,6 +201,7 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
     [self.underRightViewController didMoveToParentViewController:self];
     
     [self updateUnderRightLayout];
+    [self.view insertSubview:self.underRightView belowSubview:self.topView];
   }
 }
 
@@ -696,9 +698,9 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
   dispatch_async(dispatch_get_main_queue(), ^{
     [[NSNotificationCenter defaultCenter] postNotificationName:ECSlidingViewUnderLeftWillAppear object:self userInfo:nil];
   });
-  [self.underRightView removeFromSuperview];
+  [self.underRightView setHidden:YES];
   [self updateUnderLeftLayout];
-  [self.view insertSubview:self.underLeftView belowSubview:self.topView];
+  [self.underLeftView setHidden:NO];
   _underLeftShowing  = YES;
   _underRightShowing = NO;
 }
@@ -708,9 +710,9 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
   dispatch_async(dispatch_get_main_queue(), ^{
     [[NSNotificationCenter defaultCenter] postNotificationName:ECSlidingViewUnderRightWillAppear object:self userInfo:nil];
   });
-  [self.underLeftView removeFromSuperview];
+  [self.self.underLeftView setHidden:YES];
   [self updateUnderRightLayout];
-  [self.view insertSubview:self.underRightView belowSubview:self.topView];
+  [self.underRightView setHidden:NO];
   _underLeftShowing  = NO;
   _underRightShowing = YES;
 }
@@ -723,8 +725,8 @@ NSString *const ECSlidingViewTopDidReset             = @"ECSlidingViewTopDidRese
   [self.topView removeGestureRecognizer:self.resetTapGesture];
   [self removeTopViewSnapshot];
   self.panGesture.enabled = YES;
-  [self.underRightView removeFromSuperview];
-  [self.underLeftView removeFromSuperview];
+  [self.self.underLeftView setHidden:NO];
+  [self.underRightView setHidden:NO];
   _underLeftShowing   = NO;
   _underRightShowing  = NO;
   _topViewIsOffScreen = NO;
